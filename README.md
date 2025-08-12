@@ -290,10 +290,6 @@ pre-commit install
 2. Add unit tests in `tests/test_distance/`
 3. Update the CLI scripts to support the new metric
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🐛 Issues and Support
 
 - **Bug Reports**: [GitHub Issues](https://github.com/your-username/linguistic-distance/issues)
