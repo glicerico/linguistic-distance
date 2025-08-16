@@ -13,48 +13,132 @@ import xml.etree.ElementTree as ET
 class BibleDownloader:
     """Download Bible translations in multiple languages."""
     
-    # Bible XML sources from christos-c/bible-corpus repository
-    BIBLE_SOURCES = {
-        'english': {
-            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/English.xml',
-            'encoding': 'utf-8'
-        },
-        'spanish': {
-            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Spanish.xml',
-            'encoding': 'utf-8'
-        },
-        'german': {
-            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/German.xml',
-            'encoding': 'utf-8'
-        },
-        'italian': {
-            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Italian.xml',
-            'encoding': 'utf-8'
-        },
-        'dutch': {
-            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Dutch.xml',
-            'encoding': 'utf-8'
-        }
+    # All available Bible XML sources from christos-c/bible-corpus repository
+    ALL_BIBLE_SOURCES = {
+        'achuar': 'Achuar-NT.xml',
+        'afrikaans': 'Afrikaans.xml',
+        'aguaruna': 'Aguaruna-NT.xml',
+        'akawaio': 'Akawaio-NT.xml',
+        'albanian': 'Albanian.xml',
+        'amharic': 'Amharic.xml',
+        'amuzgo': 'Amuzgo-NT.xml',
+        'arabic': 'Arabic.xml',
+        'armenian': 'Armenian-PART.xml',
+        'ashaninka': 'Ashaninka-NT.xml',
+        'aukan': 'Aukan-NT.xml',
+        'barasana': 'Barasana-NT.xml',
+        'basque': 'Basque-NT.xml',
+        'bulgarian': 'Bulgarian.xml',
+        'burmese': 'Burmese.xml',
+        'cabecar': 'Cabecar-NT.xml',
+        'cakchiquel': 'Cakchiquel-NT.xml',
+        'camsa': 'Camsa-NT.xml',
+        'cebuano': 'Cebuano.xml',
+        'chamorro': 'Chamorro-PART.xml',
+        'cherokee': 'Cherokee-NT.xml',
+        'chinantec': 'Chinantec-NT.xml',
+        'chinese': 'Chinese.xml',
+        'chinese_tok': 'Chinese-tok.xml',
+        'coptic': 'Coptic-NT.xml',
+        'creole': 'Creole.xml',
+        'croatian': 'Croatian.xml',
+        'czech': 'Czech.xml',
+        'danish': 'Danish.xml',
+        'dinka': 'Dinka-NT.xml',
+        'dutch': 'Dutch.xml',
+        'english': 'English.xml',
+        'english_web': 'English-WEB.xml',
+        'esperanto': 'Esperanto.xml',
+        'estonian': 'Estonian-PART.xml',
+        'ewe': 'Ewe-NT.xml',
+        'farsi': 'Farsi.xml',
+        'finnish': 'Finnish.xml',
+        'french': 'French.xml',
+        'gaelic': 'Gaelic-PART.xml',
+        'galela': 'Galela-NT.xml',
+        'german': 'German.xml',
+        'greek': 'Greek.xml',
+        'gujarati': 'Gujarati-NT.xml',
+        'hebrew': 'Hebrew.xml',
+        'hindi': 'Hindi.xml',
+        'hungarian': 'Hungarian.xml',
+        'icelandic': 'Icelandic.xml',
+        'indonesian': 'Indonesian.xml',
+        'italian': 'Italian.xml',
+        'jakalteko': 'Jakalteko-NT.xml',
+        'japanese': 'Japanese.xml',
+        'japanese_tok': 'Japanese-tok.xml',
+        'kabyle': 'Kabyle-NT.xml',
+        'kannada': 'Kannada.xml',
+        'kiche_sil': "K'iche'-NT-SIL.xml",
+        'kiche': "K'iche'-NT.xml",
+        'korean': 'Korean.xml',
+        'latin': 'Latin.xml',
+        'latvian': 'Latvian-NT.xml',
+        'lithuanian': 'Lithuanian.xml',
+        'lukpa': 'Lukpa-NT.xml',
+        'malagasy': 'Malagasy.xml',
+        'malayalam': 'Malayalam.xml',
+        'mam': 'Mam-NT.xml',
+        'manx': 'Manx-PART.xml',
+        'maori': 'Maori.xml',
+        'marathi': 'Marathi.xml',
+        'nahuatl': 'Nahuatl-NT.xml',
+        'nepali': 'Nepali.xml',
+        'norwegian': 'Norwegian.xml',
+        'ojibwa': 'Ojibwa-NT.xml',
+        'paite': 'Paite.xml',
+        'polish': 'Polish.xml',
+        'portuguese': 'Portuguese.xml',
+        'potawatomi': 'Potawatomi-PART.xml',
+        'qeqchi': "Q'eqchi'.xml",
+        'quichua': 'Quichua-NT.xml',
+        'romanian': 'Romanian.xml',
+        'romani': 'Romani-NT.xml',
+        'russian': 'Russian.xml',
+        'serbian': 'Serbian.xml',
+        'shona': 'Shona.xml',
+        'shuar': 'Shuar-NT.xml',
+        'slovak': 'Slovak.xml',
+        'slovene': 'Slovene.xml',
+        'somali': 'Somali.xml',
+        'spanish': 'Spanish.xml',
+        'swahili': 'Swahili-NT.xml',
+        'swedish': 'Swedish.xml',
+        'syriac': 'Syriac-NT.xml',
+        'tachelhit': 'Tachelhit-NT.xml',
+        'tagalog': 'Tagalog.xml',
+        'telugu': 'Telugu.xml',
+        'thai': 'Thai.xml',
+        'thai_tok': 'Thai-tok.xml',
+        'tuareg': 'Tuareg-PART.xml',
+        'turkish': 'Turkish.xml',
+        'ukrainian': 'Ukranian-NT.xml',
+        'uma': 'Uma-NT.xml',
+        'uspanteco': 'Uspanteco-NT.xml',
+        'vietnamese': 'Vietnamese.xml',
+        'vietnamese_tok': 'Vietnamese-tok.xml',
+        'wolaytta': 'Wolaytta-NT.xml',
+        'wolof': 'Wolof-NT.xml',
+        'xhosa': 'Xhosa.xml',
+        'zarma': 'Zarma.xml',
+        'zulu': 'Zulu-NT.xml'
     }
     
-    # Alternative XML sources from christos-c/bible-corpus repository
-    ALTERNATIVE_SOURCES = {
-        'english': [
-            'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/English-WEB.xml'
-        ],
-        'spanish': [
-            # Only one Spanish XML available in the corpus
-        ],
-        'german': [
-            # Only one German XML available in the corpus
-        ],
-        'italian': [
-            # Only one Italian XML available in the corpus
-        ],
-        'dutch': [
-            # Only one Dutch XML available in the corpus
-        ]
-    }
+    # Default languages for common use cases
+    DEFAULT_LANGUAGES = ['english', 'spanish', 'german', 'italian', 'dutch']
+    
+    # Base URL for christos-c/bible-corpus repository
+    BASE_URL = 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/'
+    
+    @classmethod
+    def get_available_languages(cls) -> List[str]:
+        """Get list of all available languages.
+        
+        Returns:
+            List of available language codes
+        """
+        return list(cls.ALL_BIBLE_SOURCES.keys())
     
     def __init__(self, data_dir: str = "data/raw"):
         """Initialize the downloader.
@@ -69,14 +153,16 @@ class BibleDownloader:
         """Download Bible text for a specific language.
         
         Args:
-            language: Language code (english, spanish, german, italian, dutch)
+            language: Language code from available languages list
             force_download: Whether to re-download if file exists
             
         Returns:
             True if successful, False otherwise
         """
-        if language not in self.BIBLE_SOURCES:
-            print(f"Language '{language}' not supported. Available: {list(self.BIBLE_SOURCES.keys())}")
+        if language not in self.ALL_BIBLE_SOURCES:
+            available = ', '.join(sorted(self.ALL_BIBLE_SOURCES.keys())[:10]) + '...'
+            print(f"Language '{language}' not supported. Available: {available}")
+            print(f"Use get_available_languages() to see all {len(self.ALL_BIBLE_SOURCES)} supported languages.")
             return False
             
         output_file = self.data_dir / f"{language}_bible.txt"
@@ -85,24 +171,16 @@ class BibleDownloader:
             print(f"File {output_file} already exists. Use force_download=True to re-download.")
             return True
             
-        # Try primary source first
-        success = self._download_and_extract_xml(
-            self.BIBLE_SOURCES[language]['url'],
-            output_file,
-            self.BIBLE_SOURCES[language]['encoding']
-        )
+        # Construct URL from base URL and filename
+        filename = self.ALL_BIBLE_SOURCES[language]
+        url = self.BASE_URL + filename
         
-        # If primary source fails, try alternatives
-        if not success and language in self.ALTERNATIVE_SOURCES and self.ALTERNATIVE_SOURCES[language]:
-            for url in self.ALTERNATIVE_SOURCES[language]:
-                print(f"Trying alternative source: {url}")
-                success = self._download_and_extract_xml(url, output_file, 'utf-8')
-                if success:
-                    break
+        # Download and extract XML
+        success = self._download_and_extract_xml(url, output_file, 'utf-8')
         
-        # If all sources fail, create a sample file
-        if not success:
-            print(f"All sources failed for {language}. Creating sample data...")
+        # If download fails, create a sample file only for default languages
+        if not success and language in self.DEFAULT_LANGUAGES:
+            print(f"Download failed for {language}. Creating sample data...")
             self._create_sample_data(language, output_file)
             return True
             
@@ -223,14 +301,14 @@ class BibleDownloader:
         """Download Bible texts for multiple languages.
         
         Args:
-            languages: List of language codes. If None, downloads all supported languages.
+            languages: List of language codes. If None, downloads default languages.
             force_download: Whether to re-download existing files
             
         Returns:
             Dictionary mapping language to download success status
         """
         if languages is None:
-            languages = list(self.BIBLE_SOURCES.keys())
+            languages = self.DEFAULT_LANGUAGES
             
         results = {}
         
@@ -240,15 +318,21 @@ class BibleDownloader:
             
         return results
         
-    def get_file_info(self) -> Dict[str, Dict[str, int]]:
+    def get_file_info(self, languages: Optional[List[str]] = None) -> Dict[str, Dict[str, int]]:
         """Get information about downloaded files.
+        
+        Args:
+            languages: List of language codes to check. If None, checks default languages.
         
         Returns:
             Dictionary with file statistics
         """
+        if languages is None:
+            languages = self.DEFAULT_LANGUAGES
+            
         info = {}
         
-        for language in self.BIBLE_SOURCES.keys():
+        for language in languages:
             file_path = self.data_dir / f"{language}_bible.txt"
             if file_path.exists():
                 with open(file_path, 'r', encoding='utf-8') as f:
