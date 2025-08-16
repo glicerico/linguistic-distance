@@ -40,7 +40,7 @@ from utils.visualization import plot_distance_matrix
 
 # Download and preprocess data
 downloader = BibleDownloader()
-downloader.download_all(["english", "spanish", "german"])
+downloader.download_all(["english", "spanish", "german"])  # or any of 98+ languages
 
 # Train embeddings
 trainer = EmbeddingTrainer()
@@ -57,8 +57,11 @@ plot_distance_matrix(distances, save_path="distance_matrix.png")
 ### Command Line Interface
 
 ```bash
-# Download data for all supported languages
+# Download data for default languages
 python scripts/download_data.py
+
+# Download specific languages from 98+ available
+python scripts/download_data.py --languages arabic chinese japanese korean russian
 
 # Train Word2Vec embeddings
 python scripts/train_embeddings.py --model-type word2vec --vector-size 150
@@ -72,12 +75,15 @@ python scripts/visualize_results.py --results-file results/linguistic_distances.
 
 ## 📊 Supported Languages
 
-Currently supports Bible translations in:
-- **English** 🇺🇸
-- **Spanish** 🇪🇸  
-- **German** 🇩🇪
-- **Italian** 🇮🇹
-- **Dutch** 🇳🇱
+Supports Bible translations in **98+ languages** from the christos-c/bible-corpus repository:
+
+**Default languages**: English 🇺🇸, Spanish 🇪🇸, German 🇩🇪, Italian 🇮🇹, Dutch 🇳🇱
+
+**Major world languages**: Arabic, Chinese, French, Hebrew, Hindi, Japanese, Korean, Portuguese, Russian, Turkish, and many others
+
+**Indigenous and regional languages**: Includes many New Testament translations and partial Bible translations
+
+Use `BibleDownloader.get_available_languages()` to see the complete list of supported languages.
 
 ## 🔬 Distance Metrics
 
@@ -281,8 +287,9 @@ pre-commit install
 ```
 
 ### Adding New Languages
-1. Add language-specific preprocessing rules in `src/data/preprocessor.py`
-2. Update `BibleDownloader` with new data sources
+Languages are automatically supported if they exist in the christos-c/bible-corpus repository. To add a new language:
+1. Add the language mapping to `ALL_BIBLE_SOURCES` in `BibleDownloader`
+2. Add language-specific preprocessing rules in `src/data/preprocessor.py` if needed
 3. Add test cases for the new language
 
 ### Adding New Distance Metrics

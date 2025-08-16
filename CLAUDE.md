@@ -49,8 +49,11 @@ This repository contains a comprehensive Python library for measuring linguistic
 
 ### Data Pipeline
 ```bash
-# Download Bible translations for supported languages
+# Download Bible translations for default languages
 python scripts/download_data.py --languages english spanish german italian dutch
+
+# Download specific languages from 98+ available
+python scripts/download_data.py --languages arabic chinese japanese korean russian
 
 # Train embeddings (Word2Vec example)
 python scripts/train_embeddings.py --model-type word2vec --vector-size 150 --epochs 100
@@ -104,8 +107,15 @@ python -m build
 - Canonical Correlation Analysis (CCA)
 
 ### Supported Languages
-Currently supports Bible translations in:
-- English, Spanish, German, Italian, Dutch
+Supports Bible translations in 98+ languages from the christos-c/bible-corpus repository, including:
+
+**Default languages**: English, Spanish, German, Italian, Dutch
+
+**Major world languages**: Arabic, Chinese, French, Hebrew, Hindi, Japanese, Korean, Portuguese, Russian, Turkish, and many others
+
+**Indigenous and regional languages**: Includes many New Testament translations and partial Bible translations
+
+Use `BibleDownloader.get_available_languages()` to see the complete list of supported languages.
 
 ## Data Flow
 
@@ -137,8 +147,9 @@ Currently supports Bible translations in:
 ## Extension Points
 
 ### Adding New Languages
-1. Add language-specific preprocessing rules in `TextPreprocessor`
-2. Update `BibleDownloader` with new data sources
+Languages are automatically supported if they exist in the christos-c/bible-corpus repository. To add a new language:
+1. Add the language mapping to `ALL_BIBLE_SOURCES` in `BibleDownloader`
+2. Add language-specific preprocessing rules in `TextPreprocessor` if needed
 3. Add test cases and validation
 
 ### Adding New Distance Metrics
