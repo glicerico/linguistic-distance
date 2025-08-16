@@ -7,54 +7,52 @@ from typing import Dict, List, Optional
 from urllib.parse import urljoin
 import time
 from tqdm import tqdm
+import xml.etree.ElementTree as ET
 
 
 class BibleDownloader:
     """Download Bible translations in multiple languages."""
     
-    # Working Bible URLs for different languages
+    # Bible XML sources from christos-c/bible-corpus repository
     BIBLE_SOURCES = {
         'english': {
-            'url': 'https://raw.githubusercontent.com/seven1m/open-bibles/master/Bibles/English/ESV/esv.txt',
+            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/English.xml',
             'encoding': 'utf-8'
         },
         'spanish': {
-            'url': 'https://raw.githubusercontent.com/seven1m/open-bibles/master/Bibles/Spanish/RVR1960/rvr1960.txt', 
+            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Spanish.xml',
             'encoding': 'utf-8'
         },
         'german': {
-            'url': 'https://raw.githubusercontent.com/seven1m/open-bibles/master/Bibles/German/Luther1912/luther1912.txt',
+            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/German.xml',
             'encoding': 'utf-8'
         },
         'italian': {
-            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Italian.txt',
+            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Italian.xml',
             'encoding': 'utf-8'
         },
         'dutch': {
-            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Dutch.txt',
+            'url': 'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Dutch.xml',
             'encoding': 'utf-8'
         }
     }
     
-    # Alternative sources for more reliable downloads
+    # Alternative XML sources from christos-c/bible-corpus repository
     ALTERNATIVE_SOURCES = {
         'english': [
-            'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/English.txt',
-            'https://raw.githubusercontent.com/seven1m/open-bibles/master/Bibles/English/KJV/kjv.txt'
+            'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/English-WEB.xml'
         ],
         'spanish': [
-            'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/Spanish.txt',
-            'https://raw.githubusercontent.com/seven1m/open-bibles/master/Bibles/Spanish/RVA/rva.txt'
+            # Only one Spanish XML available in the corpus
         ],
         'german': [
-            'https://raw.githubusercontent.com/christos-c/bible-corpus/master/bibles/German.txt',
-            'https://raw.githubusercontent.com/seven1m/open-bibles/master/Bibles/German/Luther1545/luther1545.txt'
+            # Only one German XML available in the corpus
         ],
         'italian': [
-            'https://raw.githubusercontent.com/seven1m/open-bibles/master/Bibles/Italian/ItalianRiveduta/italianriveduta.txt'
+            # Only one Italian XML available in the corpus
         ],
         'dutch': [
-            'https://raw.githubusercontent.com/seven1m/open-bibles/master/Bibles/Dutch/Dutch1637/dutch1637.txt'
+            # Only one Dutch XML available in the corpus
         ]
     }
     
@@ -88,17 +86,17 @@ class BibleDownloader:
             return True
             
         # Try primary source first
-        success = self._download_from_url(
+        success = self._download_and_extract_xml(
             self.BIBLE_SOURCES[language]['url'],
             output_file,
             self.BIBLE_SOURCES[language]['encoding']
         )
         
         # If primary source fails, try alternatives
-        if not success and language in self.ALTERNATIVE_SOURCES:
+        if not success and language in self.ALTERNATIVE_SOURCES and self.ALTERNATIVE_SOURCES[language]:
             for url in self.ALTERNATIVE_SOURCES[language]:
                 print(f"Trying alternative source: {url}")
-                success = self._download_from_url(url, output_file, 'utf-8')
+                success = self._download_and_extract_xml(url, output_file, 'utf-8')
                 if success:
                     break
         
@@ -110,30 +108,42 @@ class BibleDownloader:
             
         return success
         
-    def _download_from_url(self, url: str, output_file: Path, encoding: str) -> bool:
-        """Download content from a URL.
+    def _download_and_extract_xml(self, url: str, output_file: Path, encoding: str) -> bool:
+        """Download XML file from christos-c/bible-corpus and extract plain text.
         
         Args:
-            url: URL to download from
-            output_file: Path to save the content
+            url: URL to download XML from
+            output_file: Path to save the extracted text
             encoding: Text encoding to use
             
         Returns:
             True if successful, False otherwise
         """
         try:
-            print(f"Downloading from {url}...")
+            print(f"Downloading XML from {url}...")
             response = requests.get(url, timeout=30)
             response.raise_for_status()
             
-            # Write to file
+            # Parse XML and extract text
+            xml_content = response.content.decode(encoding, errors='ignore')
+            root = ET.fromstring(xml_content)
+            
+            # Extract text from all <seg> elements (segments/verses)
+            extracted_text = []
+            for seg in root.iter('seg'):
+                if seg.text:
+                    extracted_text.append(seg.text.strip())
+            
+            # Write extracted text to file
             with open(output_file, 'w', encoding='utf-8') as f:
-                content = response.content.decode(encoding, errors='ignore')
-                f.write(content)
+                f.write('\n'.join(extracted_text))
                 
-            print(f"Successfully downloaded {output_file}")
+            print(f"Successfully downloaded and extracted {len(extracted_text)} verses to {output_file}")
             return True
             
+        except ET.ParseError as e:
+            print(f"Failed to parse XML from {url}: {e}")
+            return False
         except Exception as e:
             print(f"Failed to download from {url}: {e}")
             return False
