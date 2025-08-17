@@ -12,16 +12,42 @@ from tqdm import tqdm
 
 
 class TrainingCallback(CallbackAny2Vec):
-    """Callback to track training progress."""
+    """Callback to track training progress with early stopping."""
     
-    def __init__(self):
+    def __init__(self, patience=5, min_delta=0.001):
         self.epoch = 0
         self.losses = []
+        self.previous_loss = 0
+        self.patience = patience
+        self.min_delta = min_delta
+        self.wait = 0
+        self.best_loss = float('inf')
+        self.should_stop = False
         
     def on_epoch_end(self, model):
-        loss = model.get_latest_training_loss()
-        self.losses.append(loss)
-        print(f'Loss after epoch {self.epoch}: {loss}')
+        # Get cumulative loss and calculate per-epoch loss
+        cumulative_loss = model.get_latest_training_loss()
+        epoch_loss = cumulative_loss - self.previous_loss
+        
+        self.losses.append(epoch_loss)
+        
+        # Early stopping logic
+        if epoch_loss < self.best_loss - self.min_delta:
+            self.best_loss = epoch_loss
+            self.wait = 0
+        else:
+            self.wait += 1
+            
+        # Print progress
+        if self.epoch % 5 == 0 or self.epoch < 5:  # Print every 5 epochs after first 5
+            print(f'Epoch {self.epoch}: loss = {epoch_loss:.1f} (best: {self.best_loss:.1f}, patience: {self.wait}/{self.patience})')
+        
+        # Check if we should stop early
+        if self.wait >= self.patience and self.epoch >= 10:  # Don't stop too early
+            print(f'Early stopping at epoch {self.epoch} (no improvement for {self.patience} epochs)')
+            self.should_stop = True
+        
+        self.previous_loss = cumulative_loss
         self.epoch += 1
 
 
@@ -66,12 +92,13 @@ class EmbeddingTrainer:
     def train_word2vec(self, 
                        corpus_file: str,
                        language: str,
-                       vector_size: int = 100,
+                       vector_size: int = 150,
                        window: int = 5,
-                       min_count: int = 5,
+                       min_count: int = 4,
                        workers: int = 4,
-                       epochs: int = 100,
-                       sg: int = 0) -> Word2Vec:
+                       epochs: int = 40,
+                       sg: int = 0,
+                       sample: float = 1e-3) -> Word2Vec:
         """Train Word2Vec embeddings.
         
         Args:
@@ -95,7 +122,7 @@ class EmbeddingTrainer:
         # Initialize callback
         callback = TrainingCallback()
         
-        # Train model
+        # Train model with improved parameters
         model = Word2Vec(
             sentences=sentences,
             vector_size=vector_size,
@@ -105,7 +132,11 @@ class EmbeddingTrainer:
             epochs=epochs,
             sg=sg,
             callbacks=[callback],
-            compute_loss=True
+            compute_loss=True,
+            alpha=0.025,        # Initial learning rate
+            min_alpha=0.0001,   # Minimum learning rate
+            negative=5,         # Negative sampling
+            sample=sample       # Subsampling threshold
         )
         
         # Save model
@@ -126,14 +157,15 @@ class EmbeddingTrainer:
     def train_fasttext(self, 
                        corpus_file: str,
                        language: str,
-                       vector_size: int = 100,
+                       vector_size: int = 150,
                        window: int = 5,
-                       min_count: int = 5,
+                       min_count: int = 4,
                        workers: int = 4,
-                       epochs: int = 100,
+                       epochs: int = 40,
                        sg: int = 0,
                        min_n: int = 3,
-                       max_n: int = 6) -> FastText:
+                       max_n: int = 6,
+                       sample: float = 1e-3) -> FastText:
         """Train FastText embeddings.
         
         Args:
@@ -159,7 +191,7 @@ class EmbeddingTrainer:
         # Initialize callback
         callback = TrainingCallback()
         
-        # Train model
+        # Train model with improved parameters
         model = FastText(
             sentences=sentences,
             vector_size=vector_size,
@@ -171,7 +203,11 @@ class EmbeddingTrainer:
             min_n=min_n,
             max_n=max_n,
             callbacks=[callback],
-            compute_loss=True
+            compute_loss=True,
+            alpha=0.025,        # Initial learning rate
+            min_alpha=0.0001,   # Minimum learning rate
+            negative=5,         # Negative sampling
+            sample=sample       # Subsampling threshold
         )
         
         # Save model

@@ -51,7 +51,7 @@ def main():
     parser.add_argument(
         "--vector-size", 
         type=int, 
-        default=100,
+        default=150,
         help="Dimensionality of embeddings"
     )
     parser.add_argument(
@@ -63,13 +63,13 @@ def main():
     parser.add_argument(
         "--min-count", 
         type=int, 
-        default=5,
+        default=4,
         help="Minimum word frequency"
     )
     parser.add_argument(
         "--epochs", 
         type=int, 
-        default=100,
+        default=40,
         help="Number of training epochs"
     )
     parser.add_argument(
@@ -109,6 +109,12 @@ def main():
         default=6,
         help="Maximum character n-gram length (FastText only)"
     )
+    parser.add_argument(
+        "--sample", 
+        type=float, 
+        default=1e-3,
+        help="Subsampling threshold for frequent words"
+    )
     
     args = parser.parse_args()
     setup_logging(args.verbose)
@@ -122,7 +128,8 @@ def main():
         'min_count': args.min_count,
         'workers': args.workers,
         'epochs': args.epochs,
-        'sg': args.sg
+        'sg': args.sg,
+        'sample': args.sample
     }
     
     if args.model_type == 'fasttext':
