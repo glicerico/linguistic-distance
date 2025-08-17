@@ -239,12 +239,16 @@ class IOUtils:
         """Load analysis results from disk.
         
         Args:
-            filename: Filename to load from
+            filename: Filename to load from (can be absolute or relative path)
             
         Returns:
             Dictionary of results
         """
-        filepath = self.base_dir / filename
+        # Handle absolute paths and paths that already include the base directory
+        filepath = Path(filename)
+        if not filepath.is_absolute() and not filepath.exists():
+            # Only prepend base_dir if the file doesn't exist as-is
+            filepath = self.base_dir / filename
         
         if not filepath.exists():
             raise FileNotFoundError(f"File not found: {filepath}")

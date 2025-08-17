@@ -12,9 +12,9 @@ from tqdm import tqdm
 
 
 class TrainingCallback(CallbackAny2Vec):
-    """Callback to track training progress with early stopping."""
+    """Callback to track training progress with early stopping and best model saving."""
     
-    def __init__(self, patience=5, min_delta=0.001):
+    def __init__(self, patience=5, min_delta=0.001, save_path=None, language=None):
         self.epoch = 0
         self.losses = []
         self.previous_loss = 0
@@ -23,6 +23,9 @@ class TrainingCallback(CallbackAny2Vec):
         self.wait = 0
         self.best_loss = float('inf')
         self.should_stop = False
+        self.save_path = save_path
+        self.language = language
+        self.best_model = None
         
     def on_epoch_end(self, model):
         # Get cumulative loss and calculate per-epoch loss
@@ -31,10 +34,15 @@ class TrainingCallback(CallbackAny2Vec):
         
         self.losses.append(epoch_loss)
         
-        # Early stopping logic
+        # Check if this is the best model so far
         if epoch_loss < self.best_loss - self.min_delta:
             self.best_loss = epoch_loss
             self.wait = 0
+            
+            # Save the best model if save_path is provided
+            if self.save_path and self.language:
+                self._save_best_model(model)
+                print(f'💾 New best model saved at epoch {self.epoch} (loss: {epoch_loss:.1f})')
         else:
             self.wait += 1
             
@@ -49,6 +57,28 @@ class TrainingCallback(CallbackAny2Vec):
         
         self.previous_loss = cumulative_loss
         self.epoch += 1
+    
+    def _save_best_model(self, model):
+        """Save the current best model."""
+        if not self.save_path or not self.language:
+            return
+        
+        try:
+            # Determine model type from model class
+            model_type = "fasttext" if hasattr(model, 'min_n') else "word2vec"
+            
+            # Save the full model
+            model_path = self.save_path / f"{self.language}_{model_type}_best.model"
+            model.save(str(model_path))
+            
+            # Save just the embeddings
+            embeddings_path = self.save_path / f"{self.language}_{model_type}_best_embeddings.pkl"
+            embeddings = {word: model.wv[word] for word in model.wv.index_to_key}
+            with open(embeddings_path, 'wb') as f:
+                pickle.dump(embeddings, f)
+                
+        except Exception as e:
+            print(f'⚠️  Warning: Could not save best model: {e}')
 
 
 class EmbeddingTrainer:
@@ -119,8 +149,8 @@ class EmbeddingTrainer:
         # Load corpus
         sentences = self.load_corpus(corpus_file)
         
-        # Initialize callback
-        callback = TrainingCallback()
+        # Initialize callback with best model saving
+        callback = TrainingCallback(save_path=self.output_dir, language=language)
         
         # Train model with improved parameters
         model = Word2Vec(
@@ -139,17 +169,33 @@ class EmbeddingTrainer:
             sample=sample       # Subsampling threshold
         )
         
-        # Save model
-        model_path = self.output_dir / f"{language}_word2vec.model"
-        model.save(str(model_path))
+        # Use best model as the final model if available
+        best_model_path = self.output_dir / f"{language}_word2vec_best.model"
+        best_embeddings_path = self.output_dir / f"{language}_word2vec_best_embeddings.pkl"
         
-        # Save just the embeddings
-        embeddings_path = self.output_dir / f"{language}_word2vec_embeddings.pkl"
-        embeddings = {word: model.wv[word] for word in model.wv.index_to_key}
-        with open(embeddings_path, 'wb') as f:
-            pickle.dump(embeddings, f)
+        if best_model_path.exists() and best_embeddings_path.exists():
+            # Copy best model to standard location
+            final_model_path = self.output_dir / f"{language}_word2vec.model"
+            final_embeddings_path = self.output_dir / f"{language}_word2vec_embeddings.pkl"
             
-        self.logger.info(f"Saved Word2Vec model to {model_path}")
+            import shutil
+            shutil.copy(str(best_model_path), str(final_model_path))
+            shutil.copy(str(best_embeddings_path), str(final_embeddings_path))
+            
+            self.logger.info(f"✅ Using best model (loss: {callback.best_loss:.1f}) as final model")
+            self.logger.info(f"Saved to {final_model_path}")
+        else:
+            # Fallback: save current model
+            model_path = self.output_dir / f"{language}_word2vec.model"
+            model.save(str(model_path))
+            
+            embeddings_path = self.output_dir / f"{language}_word2vec_embeddings.pkl"
+            embeddings = {word: model.wv[word] for word in model.wv.index_to_key}
+            with open(embeddings_path, 'wb') as f:
+                pickle.dump(embeddings, f)
+                
+            self.logger.info(f"Saved final model to {model_path}")
+            
         self.logger.info(f"Vocabulary size: {len(model.wv)}")
         
         return model
@@ -188,8 +234,8 @@ class EmbeddingTrainer:
         # Load corpus
         sentences = self.load_corpus(corpus_file)
         
-        # Initialize callback
-        callback = TrainingCallback()
+        # Initialize callback with best model saving
+        callback = TrainingCallback(save_path=self.output_dir, language=language)
         
         # Train model with improved parameters
         model = FastText(
@@ -210,17 +256,33 @@ class EmbeddingTrainer:
             sample=sample       # Subsampling threshold
         )
         
-        # Save model
-        model_path = self.output_dir / f"{language}_fasttext.model"
-        model.save(str(model_path))
+        # Use best model as the final model if available
+        best_model_path = self.output_dir / f"{language}_fasttext_best.model"
+        best_embeddings_path = self.output_dir / f"{language}_fasttext_best_embeddings.pkl"
         
-        # Save embeddings
-        embeddings_path = self.output_dir / f"{language}_fasttext_embeddings.pkl"
-        embeddings = {word: model.wv[word] for word in model.wv.index_to_key}
-        with open(embeddings_path, 'wb') as f:
-            pickle.dump(embeddings, f)
+        if best_model_path.exists() and best_embeddings_path.exists():
+            # Copy best model to standard location
+            final_model_path = self.output_dir / f"{language}_fasttext.model"
+            final_embeddings_path = self.output_dir / f"{language}_fasttext_embeddings.pkl"
             
-        self.logger.info(f"Saved FastText model to {model_path}")
+            import shutil
+            shutil.copy(str(best_model_path), str(final_model_path))
+            shutil.copy(str(best_embeddings_path), str(final_embeddings_path))
+            
+            self.logger.info(f"✅ Using best model (loss: {callback.best_loss:.1f}) as final model")
+            self.logger.info(f"Saved to {final_model_path}")
+        else:
+            # Fallback: save current model
+            model_path = self.output_dir / f"{language}_fasttext.model"
+            model.save(str(model_path))
+            
+            embeddings_path = self.output_dir / f"{language}_fasttext_embeddings.pkl"
+            embeddings = {word: model.wv[word] for word in model.wv.index_to_key}
+            with open(embeddings_path, 'wb') as f:
+                pickle.dump(embeddings, f)
+                
+            self.logger.info(f"Saved final model to {model_path}")
+            
         self.logger.info(f"Vocabulary size: {len(model.wv)}")
         
         return model

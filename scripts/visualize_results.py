@@ -104,12 +104,16 @@ def main():
         logger.error(f"Failed to load results: {e}")
         return 1
         
-    if 'distance_matrices' not in results:
+    # Handle nested structure - check if results are nested under 'results' key
+    if 'results' in results and 'distance_matrices' in results['results']:
+        distance_matrices = results['results']['distance_matrices']
+        metadata = results['results'].get('metadata', {})
+    elif 'distance_matrices' in results:
+        distance_matrices = results['distance_matrices']
+        metadata = results.get('metadata', {})
+    else:
         logger.error("No distance matrices found in results file")
         return 1
-        
-    distance_matrices = results['distance_matrices']
-    metadata = results.get('metadata', {})
     languages = metadata.get('languages', [])
     
     logger.info(f"Visualizing results for {len(languages)} languages: {languages}")
